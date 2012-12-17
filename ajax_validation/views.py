@@ -1,12 +1,21 @@
+import types
+
 from django import forms
-from django.http import HttpResponse
-from django.views.decorators.http import require_POST
 from django.forms.formsets import BaseFormSet
+from django.http import HttpResponse
+from django.utils.importlib import import_module
+from django.views.decorators.http import require_POST
 
 from ajax_validation.utils import LazyEncoder
 
 def validate(request, *args, **kwargs):
     form_class = kwargs.pop('form_class')
+    if isinstance(form_class, (str, unicode)):
+        module = '.'.join(form_class.split('.')[:-1])
+        attribute = form_class.split('.')[-1]
+        form_class = getattr(import_module(module), attribute)
+    if isinstance(form_class, types.FunctionType):
+        form_class = form_class()
     defaults = {
         'data': request.POST
     }
@@ -17,6 +26,7 @@ def validate(request, *args, **kwargs):
     if form.is_valid():
         data = {
             'valid': True,
+            'errors': {},
         }
     else:
         # if we're dealing with a FormSet then walk over .forms to populate errors and formfields
@@ -48,7 +58,7 @@ def validate(request, *args, **kwargs):
                 html_id = formfields[key].field.widget.id_for_label(html_id)
                 final_errors[html_id] = val
         data = {
-            'valid': False or not final_errors,
+            'valid': False,
             'errors': final_errors,
         }
     json_serializer = LazyEncoder()
