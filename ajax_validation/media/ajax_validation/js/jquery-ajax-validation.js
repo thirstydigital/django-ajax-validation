@@ -27,7 +27,8 @@
                     async: settings.async,
                     data: data,
                     dataType: 'json',
-                    error: function(XHR, textStatus, errorThrown) {
+                    traditional: true,
+                    error: function(XHR, textStatus, errorThrown)   {
                         status = true;
                     },
                     success: function(data, textStatus) {
